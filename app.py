@@ -17,7 +17,7 @@ import base64 # Para codificar archivos en base64
 @st.cache_data # Caching de datos
 def load_data(): # Carga y preprocesamiento de datos
     # Cargar el dataset de museos en CDMX
-    df = pd.read_csv("museos_cdmx_geolocalizado.csv", encoding="latin1")
+    df = pd.read_csv("museos_cdmx_geolocalizado.csv", encoding="utf-8")
     df.columns = df.columns.str.strip()  # Limpia espacios extra en encabezados
     df['Segmento'] = df['Nacionalidad'] + " - " + df['Tipo de visitantes'] # Crea una columna combinada de segmento
     return df
