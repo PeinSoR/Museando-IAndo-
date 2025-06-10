@@ -3,7 +3,7 @@ import time
 import requests
 
 # Cargar el archivo original
-df = pd.read_csv("museos_cdmx.csv")
+df = pd.read_csv("museos_cdmx.csv", encoding = "utf-8-sig")
 
 # Corregir errores de codificación
 df['Centro de trabajo'] = df['Centro de trabajo'].str.encode('latin1', errors='ignore').str.decode('utf-8', errors='ignore')
