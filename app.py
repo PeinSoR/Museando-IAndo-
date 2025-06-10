@@ -1,8 +1,10 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
 from scipy.sparse import coo_matrix
-import implicit
 import folium
 from streamlit_folium import st_folium
 from fpdf import FPDF
@@ -28,19 +30,72 @@ reverse_item_ids = {v: k for k, v in item_ids.items()}
 df['user_index'] = df['Segmento'].map(user_ids)
 df['item_index'] = df['Centro de trabajo'].map(item_ids)
 
-# Usamos la columna renombrada 'Visitas'
-matrix = coo_matrix(
-    (df['Visitas'], (df['user_index'], df['item_index']))
-).tocsr()
+# =========================
+# Modelo Deep Learning
+# =========================
 
-def train_model(matrix):
-    model = implicit.als.AlternatingLeastSquares(
-        factors=20, regularization=0.1, iterations=20
-    )
-    model.fit(matrix)
+class RecommenderNet(nn.Module):
+    def __init__(self, num_users, num_items, embedding_size=20):
+        super(RecommenderNet, self).__init__()
+        self.user_embedding = nn.Embedding(num_users, embedding_size)
+        self.item_embedding = nn.Embedding(num_items, embedding_size)
+        self.fc1 = nn.Linear(embedding_size * 2, 64)
+        self.fc2 = nn.Linear(64, 16)
+        self.output = nn.Linear(16, 1)
+        self.relu = nn.ReLU()
+
+    def forward(self, user_indices, item_indices):
+        user_embedded = self.user_embedding(user_indices)
+        item_embedded = self.item_embedding(item_indices)
+        x = torch.cat([user_embedded, item_embedded], dim=-1)
+        x = self.relu(self.fc1(x))
+        x = self.relu(self.fc2(x))
+        out = self.output(x)
+        return out.squeeze()
+
+@st.cache_resource(show_spinner=False)
+def train_deep_model(df, epochs=10, lr=0.01):
+    num_users = len(user_ids)
+    num_items = len(item_ids)
+
+    model = RecommenderNet(num_users, num_items)
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+
+    # Dataset tensors
+    users = torch.LongTensor(df['user_index'].values)
+    items = torch.LongTensor(df['item_index'].values)
+    ratings = torch.FloatTensor(df['Visitas'].values)
+
+    model.train()
+    for epoch in range(epochs):
+        optimizer.zero_grad()
+        outputs = model(users, items)
+        loss = criterion(outputs, ratings)
+        loss.backward()
+        optimizer.step()
+
     return model
 
-model = train_model(matrix)
+model = train_deep_model(df)
+
+# =========================
+# Función para recomendar
+# =========================
+
+def get_recommendations(model, user_idx, N=5):
+    model.eval()
+    num_items = len(item_ids)
+    user_tensor = torch.LongTensor([user_idx] * num_items)
+    item_tensor = torch.LongTensor(list(range(num_items)))
+    with torch.no_grad():
+        scores = model(user_tensor, item_tensor).numpy()
+
+    # Ordenar indices por score descendente
+    top_indices = np.argsort(scores)[::-1][:N]
+    top_scores = scores[top_indices]
+
+    return top_indices, top_scores
 
 # =========================
 # Interfaz de usuario
@@ -52,7 +107,7 @@ segmento_seleccionado = st.selectbox("Selecciona tu segmento:", list(user_ids.ke
 user_idx = user_ids[segmento_seleccionado]
 
 if st.button("🔍 Ver recomendaciones"):
-    recomendaciones = model.recommend(user_idx, matrix[user_idx], N=5)
+    recomendaciones = get_recommendations(model, user_idx, N=5)
     st.session_state['recomendaciones'] = recomendaciones
 
 if 'recomendaciones' in st.session_state:
