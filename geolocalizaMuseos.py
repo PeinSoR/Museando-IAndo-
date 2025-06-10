@@ -2,20 +2,11 @@ import pandas as pd
 import time
 import requests
 
-# Función para corregir caracteres mal codificados
-def corregir_caracteres(texto):
-    if isinstance(texto, str):
-        try:
-            return texto.encode('latin1').decode('utf-8')
-        except:
-            return texto  # En caso de error, deja el texto original
-    return texto
+# Cargar el archivo original
+df = pd.read_csv('museos_cdmx.csv', encoding = 'cp1252')
 
-# Cargar el archivo CSV (ajustar encoding si es necesario)
-df = pd.read_csv('museos_cdmx.csv', encoding='cp1252')
-
-# Aplicar corrección de caracteres a la columna relevante
-df['Centro de trabajo'] = df['Centro de trabajo'].apply(corregir_caracteres)
+# Corregir errores de codificación
+df['Centro de trabajo'] = df['Centro de trabajo'].str.encode('latin1', errors='ignore').str.decode('utf-8', errors='ignore')
 
 # Obtener nombres únicos de museos
 museos_unicos = df['Centro de trabajo'].dropna().unique()
