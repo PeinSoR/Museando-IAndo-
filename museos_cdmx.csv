@@ -1,4 +1,4 @@
-Periodo,Estado,Clave SIINAH,Tipo de sitio,Centro de trabajo,Tipo de visitantes,Nacionalidad,Numero de visitas
+﻿Periodo,Estado,Clave SIINAH,Tipo de sitio,Centro de trabajo,Tipo de visitantes,Nacionalidad,Visitas
 01/01/1996,Ciudad de Mexico,2100100,Museo,Museo Nacional de Antropologia,Boleto pagado,Extranjeros,25722
 01/01/1996,Ciudad de Mexico,2100100,Museo,Museo Nacional de Antropologia,Entrada sin costo,Nacional,60638
 01/01/1996,Ciudad de Mexico,2100200,Museo,Museo Nacional de Historia,Boleto pagado,Extranjeros,1890
