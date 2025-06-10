@@ -34,11 +34,10 @@ matrix = coo_matrix(
 ).tocsr()
 
 # =========================
-# Modelo ALS
+# Modelo ALS (sin cache)
 # =========================
 
-@st.cache_resource
-def train_model(matrix):
+def train_model(matrix):  # sin @st.cache_resource
     model = implicit.als.AlternatingLeastSquares(
         factors=20, regularization=0.1, iterations=20
     )
@@ -60,8 +59,29 @@ user_idx = user_ids[segmento_seleccionado]
 
 # Botón para recomendar
 if st.button("🔍 Ver recomendaciones"):
-    recomendaciones = model.recommend(user_idx, matrix[user_idx], N=5)
-    
+    st.session_state['recomendaciones'] = model.recommend(user_idx, matrix[user_idx], N=5)
+
+if 'recomendaciones' in st.session_state:
+    item_ids_recom, scores = st.session_state['recomendaciones']
     st.subheader("🎯 Museos recomendados:")
-    for item_id, score in recomendaciones:
+    for item_id, score in zip(item_ids_recom, scores):
         st.write(f"✅ {reverse_item_ids[item_id]} — Score: {score:.2f}")
+    st.write("Estas recomendaciones se basan en el historial de visitas de tu segmento.")
+# Información adicional
+st.sidebar.header("ℹ️ Información adicional")
+st.sidebar.write(
+    "Este sistema utiliza un modelo de filtrado colaborativo para recomendar museos "
+    "basado en el historial de visitas por segmento de visitantes. "
+    "Los segmentos incluyen nacionalidades y tipos de visitantes."
+)
+# Información de contacto
+st.sidebar.header("📞 Contacto")
+st.sidebar.write(
+    "Para más información, por favor contacta a:"
+)
+st.sidebar.write(
+    "📧 Email: museandoiando@gmail.com"
+)
+st.sidebar.write(
+    "📞 Teléfono: +52 55 5167 3208"
+)
