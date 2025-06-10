@@ -62,7 +62,6 @@ def train_deep_model(df, epochs=10, lr=0.01):
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
-    # Dataset tensors
     users = torch.LongTensor(df['user_index'].values)
     items = torch.LongTensor(df['item_index'].values)
     ratings = torch.FloatTensor(df['Visitas'].values)
@@ -91,7 +90,6 @@ def get_recommendations(model, user_idx, N=5):
     with torch.no_grad():
         scores = model(user_tensor, item_tensor).numpy()
 
-    # Ordenar indices por score descendente
     top_indices = np.argsort(scores)[::-1][:N]
     top_scores = scores[top_indices]
 
@@ -130,14 +128,20 @@ if 'recomendaciones' in st.session_state:
     # =====================
     # MAPA con folium
     # =====================
-    if not detalles[['Latitud', 'Longitud']].isnull().values.any():
-        lat = detalles['Latitud'].values[0]
-        lon = detalles['Longitud'].values[0]
+    lat = detalles['Latitud'].values[0] if 'Latitud' in detalles and not pd.isnull(detalles['Latitud'].values[0]) else None
+    lon = detalles['Longitud'].values[0] if 'Longitud' in detalles and not pd.isnull(detalles['Longitud'].values[0]) else None
 
-        st.subheader("📍 Ubicación del museo")
+    st.subheader("📍 Ubicación del museo")
+
+    if lat is not None and lon is not None:
         m = folium.Map(location=[lat, lon], zoom_start=15)
         folium.Marker([lat, lon], popup=nombre_museo).add_to(m)
         st_folium(m, width=700)
+    else:
+        st.warning("Este museo no cuenta con coordenadas geográficas registradas.")
+        nombre_encoded = nombre_museo.replace(" ", "+") + "+CDMX"
+        url = f"https://www.google.com/maps/search/{nombre_encoded}"
+        st.markdown(f"[🔎 Buscar ubicación en Google Maps]({url})", unsafe_allow_html=True)
 
     # =====================
     # Exportar a PDF
@@ -156,6 +160,10 @@ if 'recomendaciones' in st.session_state:
         for col in ['Periodo', 'Estado', 'Tipo de sitio', 'Tipo de visitantes', 'Nacionalidad', 'Visitas']:
             valor = detalles[col].values[0]
             pdf.multi_cell(0, 10, f"{col}: {valor}")
+        if lat is not None and lon is not None:
+            pdf.multi_cell(0, 10, f"Ubicación: https://www.google.com/maps/search/?api=1&query={lat},{lon}")
+        else:
+            pdf.multi_cell(0, 10, f"Ubicación: No disponible. Puedes buscar '{nombre_museo} CDMX' en Google Maps.")
 
         pdf_file = f"recomendacion_{nombre_museo.replace(' ', '_')}.pdf"
         pdf.output(pdf_file)
@@ -179,3 +187,4 @@ st.sidebar.write(
 st.sidebar.header("📞 Contacto")
 st.sidebar.write("📧 Email: museandoiando@gmail.com")
 st.sidebar.write("📞 Teléfono: +52 55 5167 3208")
+
