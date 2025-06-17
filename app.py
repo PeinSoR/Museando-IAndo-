@@ -16,6 +16,8 @@ from PIL import Image
 import io
 import sys
 
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
 
 # Configuración de la página
 st.set_page_config(page_title="Recomendador de Museos CDMX", page_icon="🏛️", layout="wide")
@@ -91,10 +93,18 @@ def train_deep_model(df, epochs=10, lr=0.01):
         loss = criterion(outputs, ratings)
         loss.backward()
         optimizer.step()
+    model.eval()
+    with torch.no_grad():
+        predictions = model(users, items).numpy()
+        true_values = ratings.numpy()
 
-    return model
+    mse = mean_squared_error(true_values, predictions)
+    mae = mean_absolute_error(true_values, predictions)
+    r2 = r2_score(true_values, predictions)
+    return model, mse, mae, r2
 
-model = train_deep_model(df)
+model, mse, mae, r2 = train_deep_model(df)
+
 
 # =========================
 # Función para recomendar
@@ -277,13 +287,6 @@ except Exception as e:
     st.error("🔑 Error al cargar la API Key. Verifica tu archivo secrets.toml")
     st.stop()
 
-with st.sidebar.expander("ℹ️ Información adicional"):
-    st.write("""
-    Este sistema recomienda museos basado en el historial de visitas por segmento.
-    Los segmentos combinan nacionalidad y tipo de visitantes.
-    """)
-    st.write("📧 Contacto: museandoiando@gmail.com")
-
 segmento_seleccionado = st.selectbox("Selecciona tu segmento:", list(user_ids.keys()))
 user_idx = user_ids[segmento_seleccionado]
 
@@ -426,8 +429,25 @@ st.sidebar.write(
     "Este sistema utiliza un modelo de filtrado colaborativo para recomendar museos "
     "basado en el historial de visitas por segmento de visitantes. "
     "Los segmentos incluyen nacionalidades y tipos de visitantes."
+    ""
+    "Para comenzar a utilizar nuestro sistema realiza lo siguiente:"
+        "\n1. Selecciona uno de nuestros segmentos"
+        "\n2. Dar clic en Ver recomendaciones"
+        "\n3. Podrás ver la seleleción de nuestros museos, tambien puedes cambiar el museo que quieres ver."
+        "\n4. La información del museo que proporcionamos es la siguiente:"
+             "- Puntaje estimado (1-5 museos)"
+             "- Horarios del museo"
+             "- Dirección del museo"
+             "- Ubicación exacta"
+             "- Exportación de nuestra elección en PDF."
 )
 
 st.sidebar.header("📞 Contacto")
 st.sidebar.write("📧 Email: museandoiando@gmail.com")
 st.sidebar.write("📞 Teléfono: +52 55 5167 3208")
+st.sidebar.write("")
+st.sidebar.subheader("📊 Métricas del Modelo")
+st.sidebar.metric("MSE", f"{mse:.2f}")
+st.sidebar.metric("MAE", f"{mae:.2f}")
+st.sidebar.metric("R²", f"{r2:.2f}")
+
