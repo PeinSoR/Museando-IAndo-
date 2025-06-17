@@ -345,11 +345,15 @@ if 'recomendaciones' in st.session_state:
             
             st.markdown("⏰ **Horario**")
             with st.container():
+                horario_html =''.join(
+                    f'<div style=color: #393D42;'" class = "horario-item">{line}</div'
+                    for line in museo_info['horario'].split('\n')
+                )
                 st.markdown(f"""
-                <div class="horario-box">
-                    {museo_info['horario'].replace('\n', '<div class="horario-item"></div>')}
-                </div>
-                """, unsafe_allow_html=True)
+                            <div class="horario-box">
+                                {horario_html}
+                            </div>
+                            """, unsafe_allow_html=True)
             
             st.markdown(f"📍 **Dirección:**\n{museo_info.get('direccion', 'No disponible')}")
             if museo_info.get('url'):
