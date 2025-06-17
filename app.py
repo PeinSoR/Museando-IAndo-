@@ -342,8 +342,8 @@ if 'recomendaciones' in st.session_state:
                 }
             </style>
             """, unsafe_allow_html=True)
-            
-            st.markdown("⏰ **Horario**")
+
+            st.markdown("⏰ *Horario*")
             with st.container():
                 horario_html = ''.join(
                     f'<div style="color: #393D42;" class="horario-item">{line}</div>'
